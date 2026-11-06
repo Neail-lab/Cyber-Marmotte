@@ -1,0 +1,629 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cyber-Marmotte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a weather bulletin for small businesses. Header + scenario stepper, then one screen per step;
+   vigilance levels borrow the French weather-alert scale (vert / jaune / orange / rouge). */
+:root {
+  --bg: #EDF1F0;
+  --card: #FFFFFF;
+  --ink: #1B2631;
+  --muted: #566573;
+  --line: #D3DBDE;
+  --accent: #985323;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F3E5D7;
+  --v1: #2C8754; --v2: #E0B000; --v3: #D9701A; --v4: #C12A36;
+  --on-level: #FFFFFF; --on-jaune: #2A2300;
+  --term-bg: #15202A; --term-fg: #D3E6DA; --term-dim: #7E93A3; --term-hit: #FFB27A;
+  --fur: #A86A35; --fur-dark: #73441F; --fur-belly: #EBCCA4; --m-ink: #2A1A0E; --tooth: #FFFFFF;
+  --sms-bg: #1E2833; --sms-fg: #F1F4F6; --sms-dim: #A9B6C1;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F161D; --card: #17212B; --ink: #E4EAEE; --muted: #9AA9B5; --line: #2A3845;
+    --accent: #D58C50; --accent-ink: #1A0F07; --accent-soft: #2E2219;
+    --v1: #3BB173; --v2: #F0C541; --v3: #F08D3C; --v4: #E5535E;
+    --term-bg: #0A0F14; --term-fg: #CFE3D6; --term-dim: #6F8494; --term-hit: #FFB27A;
+    --sms-bg: #24303C; --sms-fg: #F1F4F6; --sms-dim: #A9B6C1;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F161D; --card: #17212B; --ink: #E4EAEE; --muted: #9AA9B5; --line: #2A3845;
+  --accent: #D58C50; --accent-ink: #1A0F07; --accent-soft: #2E2219;
+  --v1: #3BB173; --v2: #F0C541; --v3: #F08D3C; --v4: #E5535E;
+  --term-bg: #0A0F14; --term-fg: #CFE3D6; --term-dim: #6F8494; --term-hit: #FFB27A;
+  --sms-bg: #24303C; --sms-fg: #F1F4F6; --sms-dim: #A9B6C1;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .08em; font-size: .95rem; color: var(--muted); font-weight: 600; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand svg { width: 48px; height: 48px; }
+.brand-name { font-family: var(--f-display); font-weight: 700; font-size: 2rem; line-height: 1; letter-spacing: .01em; }
+.brand-tag { color: var(--muted); font-size: .95rem; }
+.top-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; color: var(--muted); background: var(--card); }
+.chip-demo { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.tool { padding: 6px 12px; border: 1px solid var(--line); background: var(--card); border-radius: 999px; cursor: pointer; font-size: .85rem; }
+.tool:hover { border-color: var(--ink); }
+
+/* Stepper (the scenario is a real sequence) */
+.steps ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.steps button {
+  width: 100%; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center;
+  padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--card); cursor: pointer;
+}
+.steps button[disabled] { cursor: not-allowed; opacity: .5; }
+.steps .num { grid-row: span 2; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 1.1rem; border: 2px solid var(--line); }
+.steps .lbl { font-weight: 700; line-height: 1.2; }
+.steps small { color: var(--muted); font-size: .8rem; }
+.steps button[aria-current="step"] { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent); }
+.steps button[aria-current="step"] .num { background: var(--ink); color: var(--card); border-color: var(--ink); }
+.steps .is-done .num { border-color: var(--v1); color: var(--v1); }
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 8px; border: 0; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1rem;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.row-end { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; }
+
+/* Step 1 */
+.signup { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; }
+.form { display: grid; gap: 16px; }
+.form h2 { font-family: var(--f-display); font-size: 2rem; font-weight: 700; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; }
+.field label, .fieldset legend { font-weight: 700; font-size: .9rem; }
+.field input, .field select {
+  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; width: 100%;
+}
+.fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.softs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+.soft { display: flex; gap: 8px; align-items: center; padding: 6px 0; cursor: pointer; }
+.soft input { width: 18px; height: 18px; accent-color: var(--accent); }
+.persona { display: grid; gap: 14px; align-content: start; background: var(--accent-soft); border-color: transparent; }
+.persona h3 { font-family: var(--f-display); font-size: 1.5rem; }
+.persona dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: .95rem; }
+.persona dt { color: var(--muted); }
+.persona dd { margin: 0; font-weight: 700; }
+.quote { font-size: 1.1rem; font-style: italic; border-left: 3px solid var(--accent); padding-left: 12px; }
+
+/* Bulletin */
+.bulletin { display: grid; gap: 16px; }
+.bul-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+.bul-head .marmot { width: 132px; height: 132px; }
+.bul-title { display: grid; gap: 8px; }
+.level-badge {
+  display: inline-flex; align-items: center; gap: 10px; width: fit-content;
+  font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  font-size: clamp(1.7rem, 4.5vw, 2.6rem); line-height: 1; padding: 8px 16px 6px; border-radius: 6px; color: var(--on-level);
+}
+.summary { font-size: 1.15rem; max-width: 60ch; }
+.lvl-vert { --lvl: var(--v1); --lvl-ink: var(--on-level); }
+.lvl-jaune { --lvl: var(--v2); --lvl-ink: var(--on-jaune); }
+.lvl-orange { --lvl: var(--v3); --lvl-ink: var(--on-level); }
+.lvl-rouge { --lvl: var(--v4); --lvl-ink: var(--on-level); }
+.level-badge.lvl-vert, .level-badge.lvl-jaune, .level-badge.lvl-orange, .level-badge.lvl-rouge { background: var(--lvl); color: var(--lvl-ink); }
+
+.cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.cat { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; align-content: start; }
+.cat-top { display: flex; align-items: center; gap: 8px; }
+.pastille { width: 14px; height: 14px; border-radius: 3px; background: var(--lvl); }
+.cat-level { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 1.05rem; }
+.cat-score { margin-left: auto; color: var(--muted); font-size: .9rem; }
+.cat h3 { font-size: 1.15rem; }
+.gauge { position: relative; display: grid; grid-template-columns: 25fr 25fr 25fr 25fr; gap: 2px; height: 8px; margin-block: 4px 2px; }
+.gauge span { border-radius: 2px; opacity: .35; }
+.gauge .g1 { background: var(--v1); } .gauge .g2 { background: var(--v2); } .gauge .g3 { background: var(--v3); } .gauge .g4 { background: var(--v4); }
+.gauge .on { opacity: 1; }
+.gauge i { position: absolute; top: -4px; width: 3px; height: 16px; background: var(--ink); border-radius: 2px; transform: translateX(-50%); transition: left .6s ease; }
+.why { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: .9rem; }
+.why li { display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: 8px; }
+.why .pts { font-family: var(--f-mono); font-weight: 500; text-align: right; }
+.why .src { display: inline-block; font-size: .75rem; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; white-space: nowrap; }
+.why .off { text-decoration: line-through; color: var(--muted); }
+
+.lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; }
+.lower h3 { font-family: var(--f-display); font-size: 1.45rem; font-weight: 700; margin-bottom: 10px; }
+.acts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.act { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.act:hover { border-color: var(--ink); }
+.act input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--v1); }
+.act strong { display: block; }
+.act .how { color: var(--muted); font-size: .9rem; }
+.act .gain { font-family: var(--f-mono); font-size: .85rem; color: var(--muted); white-space: nowrap; }
+.act.top1 { border-color: var(--lvl, var(--line)); border-width: 2px; }
+.done-list { margin-top: 12px; display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.done-list span::before { content: "✓ "; color: var(--v1); font-weight: 700; }
+.sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: .92rem; }
+.sources li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+.sources em { font-style: normal; color: var(--muted); font-size: .8rem; white-space: nowrap; }
+
+.callout { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 18px; border-radius: var(--r); background: var(--accent-soft); }
+.callout p { font-weight: 700; }
+
+/* Night */
+.night { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.term { background: var(--term-bg); color: var(--term-fg); border-radius: var(--r); padding: 18px; font-family: var(--f-mono); font-size: .9rem; min-height: 300px; display: grid; align-content: start; gap: 6px; overflow-x: auto; }
+.term .t { color: var(--term-dim); margin-right: 10px; }
+.term .hit { color: var(--term-hit); }
+.term .line { animation: fade .3s ease both; }
+.term .cursor { display: inline-block; width: 9px; height: 1.1em; background: var(--term-fg); vertical-align: text-bottom; animation: blink 1s steps(1) infinite; }
+.result { display: grid; gap: 14px; justify-items: start; }
+.result .marmot { width: 150px; height: 150px; }
+.result .level-badge { font-size: clamp(1.5rem, 3.2vw, 2rem); }
+.sms { width: 100%; max-width: 380px; background: var(--sms-bg); color: var(--sms-fg); border-radius: 18px; padding: 14px 16px; display: grid; gap: 4px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); animation: drop .5s cubic-bezier(.2, .9, .3, 1.2) both; }
+.sms-head { display: flex; justify-content: space-between; font-size: .8rem; color: var(--sms-dim); }
+.sms strong { font-size: 1rem; }
+.sms p { font-size: .95rem; }
+
+/* Behind the scenes */
+.coulisses h2 { font-family: var(--f-display); font-size: 1.6rem; margin-bottom: 12px; }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cols3 h3 { font-size: 1rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.cols3 ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* Marmot */
+.marmot .waves, .marmot .zz, .marmot .eyes-closed, .marmot .mouth-o { display: none; }
+.marmot.is-alert .waves, .marmot.is-alert .mouth-o { display: inline; }
+.marmot.is-alert .teeth { display: none; }
+.marmot.is-alert .body-g { animation: hop .5s ease-in-out 4; transform-origin: 60px 110px; }
+.marmot.is-alert .waves path { animation: pulse .7s ease-in-out infinite; }
+.marmot.is-sleep .eyes-open { display: none; }
+.marmot.is-sleep .eyes-closed, .marmot.is-sleep .zz { display: inline; }
+.marmot.is-sleep .zz text { animation: float 2.4s ease-in-out infinite; }
+
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes drop { from { opacity: 0; transform: translateY(-16px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-7px); } }
+@keyframes pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes float { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-4px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+@media (max-width: 860px) {
+  .signup, .lower, .night, .cols3 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .steps ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fields, .softs { grid-template-columns: minmax(0, 1fr); }
+  .bul-head { grid-template-columns: minmax(0, 1fr); }
+  .bul-head .marmot { width: 96px; height: 96px; order: -1; }
+  .act { grid-template-columns: auto minmax(0, 1fr); }
+  .act .gain { grid-column: 2; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand" id="brand"></div>
+    <div class="top-tools">
+      <span class="chip chip-demo">Démo · données simulées</span>
+      <button class="tool" id="sound" type="button" aria-pressed="true">Son : activé</button>
+      <button class="tool" id="reset" type="button">Recommencer</button>
+    </div>
+  </header>
+
+  <nav class="steps" aria-label="Étapes de la démonstration"><ol id="steps"></ol></nav>
+
+  <main id="view"></main>
+
+  <section class="panel coulisses" aria-labelledby="coulisses-title">
+    <h2 id="coulisses-title">Coulisses de la démo</h2>
+    <div class="cols3">
+      <div>
+        <h3><span class="dot" style="background:var(--v1)"></span>Ce qui fonctionne</h3>
+        <ul>
+          <li>Le parcours complet, de l’inscription à l’alerte</li>
+          <li>Le calcul du niveau de vigilance à partir de signaux pondérés</li>
+          <li>L’explication de chaque niveau (« pourquoi »)</li>
+          <li>La météo change selon les logiciels cochés</li>
+          <li>Le risque baisse quand on fait les actions</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="dot" style="background:var(--v3)"></span>Ce qui est simulé</h3>
+        <ul>
+          <li>La collecte des sources (CERT-FR, EPSS, CISA KEV, forums)</li>
+          <li>Le modèle d’IA qui prédit les attaques</li>
+          <li>L’envoi du SMS et du message Teams</li>
+          <li>Le cabinet, Sophie et les failles (fictifs)</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="dot" style="background:var(--v4)"></span>Ce qu’il faudrait vérifier</h3>
+        <ul>
+          <li>La fiabilité des prédictions sur de vraies données</li>
+          <li>Le nombre de fausses alertes</li>
+          <li>Le respect du RGPD (aucune donnée personnelle)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const SOFTS = [
+    { id: "vpn", label: "VPN d’accès à distance (pare-feu)", on: true },
+    { id: "mail", label: "Messagerie et documents en ligne", on: true },
+    { id: "web", label: "Site web WordPress", on: true },
+    { id: "nas", label: "NAS de sauvegarde", on: true },
+    { id: "win", label: "Postes Windows", on: true },
+    { id: "compta", label: "Logiciel de comptabilité", on: true },
+    { id: "cao", label: "Logiciel de dessin (CAO)", on: false },
+    { id: "rdp", label: "Bureau à distance (RDP)", on: false },
+  ];
+  const SECTORS = ["Architecture et BTP", "Santé", "Éducation", "Commerce", "Association"];
+  const CATS = [
+    { id: "phish", name: "Hameçonnage (phishing)", short: "Faux mails et faux sites", base: 10 },
+    { id: "ransom", name: "Ransomeware", short: "Fichiers bloqués contre rançon", base: 10 },
+    { id: "vuln", name: "Failles de vos logiciels", short: "Portes d’entrée techniques", base: 5 },
+  ];
+  const SIGNALS = [
+    { day: 0, cat: "phish", pts: 25, req: "mail", act: "a0", src: "CERT-FR", text: "Campagne de faux mails « facture impayée » visant les PME françaises" },
+    { day: 0, cat: "ransom", pts: 15, req: "nas", act: "a1", src: "Votre profil", text: "Aucun test de restauration des sauvegardes depuis 3 mois" },
+    { day: 0, cat: "vuln", pts: 15, req: "web", act: "a2", src: "EPSS", text: "Extension WordPress : faille publiée, exploitation probable 12 % sous 30 jours" },
+    { day: 1, cat: "vuln", pts: 55, req: "vpn", act: "b0", src: "EPSS + CISA KEV", text: "VPN : faille critique, exploitation probable 87 % sous 30 jours, déjà exploitée ailleurs" },
+    { day: 1, cat: "ransom", pts: 35, req: "vpn", act: "b1", src: "Forums surveillés", text: "Accès VPN d’entreprises de votre secteur mis en vente sur un forum de hackers" },
+    { day: 1, cat: "phish", pts: 25, req: "mail", act: "b2", src: "Calendrier des attaques", text: "Black Friday dans 3 jours : pic habituel de faux mails de livraison" },
+  ];
+  const ACTIONS = {
+    a0: { label: "Prévenir l’équipe des faux mails « facture »", time: "5 min", how: "Un message court à tous : ne pas ouvrir, transférer à la référente." },
+    a1: { label: "Tester la restauration d’une sauvegarde", time: "20 min", how: "Restaurer un dossier test depuis le NAS et vérifier qu’il s’ouvre." },
+    a2: { label: "Mettre à jour les extensions du site", time: "10 min", how: "Tableau de bord WordPress, puis « Mises à jour »." },
+    b0: { label: "Mettre à jour le pare-feu (VPN) aujourd’hui", time: "30 min", how: "Installer le correctif de l’éditeur, ou appeler votre prestataire." },
+    b1: { label: "Activer la double authentification sur le VPN", time: "15 min", how: "Un code sur le téléphone en plus du mot de passe." },
+    b2: { label: "Prévenir l’équipe : faux mails de livraison", time: "5 min", how: "Avant le Black Friday : vérifier l’expéditeur, ne jamais cliquer." },
+  };
+  const DAYS = ["Lundi 23 novembre 2026", "Mardi 24 novembre 2026"];
+  const LEVELS = [
+    { id: "vert", name: "Vigilance verte", short: "Vert", max: 24, text: "Ciel dégagé. Rien d’urgent : gardez les bonnes habitudes." },
+    { id: "jaune", name: "Vigilance jaune", short: "Jaune", max: 49, text: "Quelques nuages. Les 3 actions ci-dessous suffisent cette semaine." },
+    { id: "orange", name: "Vigilance orange", short: "Orange", max: 74, text: "Risque marqué. Faites les actions du jour avant ce soir." },
+    { id: "rouge", name: "Vigilance rouge", short: "Rouge", max: 100, text: "Tempête en vue : une attaque est probable. Agissez aujourd’hui." },
+  ];
+  const STEPS = [
+    { n: 1, lbl: "Inscription", sub: "5 minutes, une seule fois" },
+    { n: 2, lbl: "Météo du lundi", sub: "Bulletin de 7 h" },
+    { n: 3, lbl: "La nuit", sub: "L’IA analyse les sources" },
+    { n: 4, lbl: "Alerte et actions", sub: "Le risque redescend" },
+  ];
+
+  const fresh = () => ({
+    step: 1, reached: 1, nightDone: false, sound: true, done: {},
+    profile: { name: "Atelier Lemaire Architectes", sector: SECTORS[0], staff: 18, phone: "06 12 34 56 78",
+      softs: Object.fromEntries(SOFTS.map(s => [s.id, s.on])) },
+  });
+  let state = (window.claude?.hot?.data && window.claude.hot.data.profile) ? window.claude.hot.data : fresh();
+  window.claude?.hot?.snapshot?.(() => state);
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Model ----------
+  const levelOf = score => LEVELS.find(l => score <= l.max);
+  function compute(day) {
+    const sig = SIGNALS.filter(s => s.day <= day && state.profile.softs[s.req]);
+    const cats = CATS.map(c => {
+      const own = sig.filter(s => s.cat === c.id);
+      const score = Math.min(100, c.base + own.filter(s => !state.done[s.act]).reduce((a, s) => a + s.pts, 0));
+      return { ...c, score, level: levelOf(score), signals: own };
+    });
+    const overall = Math.max(...cats.map(c => c.score));
+    const impact = {};
+    sig.forEach(s => { if (!state.done[s.act]) impact[s.act] = (impact[s.act] || 0) + s.pts; });
+    const pending = Object.keys(impact).sort((a, b) => impact[b] - impact[a] || b.localeCompare(a))
+      .map(id => ({ id, gain: impact[id], ...ACTIONS[id] }));
+    const doneHere = [...new Set(sig.map(s => s.act))].filter(id => state.done[id]);
+    return { cats, overall, level: levelOf(overall), pending, doneHere };
+  }
+
+  // ---------- Marmot (original character) ----------
+  function marmot(mood, cls = "") {
+    return `<svg class="marmot is-${mood} ${cls}" viewBox="0 0 130 120" role="img" aria-label="La marmotte : ${mood === "alert" ? "elle siffle l’alerte" : mood === "sleep" ? "elle dort" : "elle surveille"}">
+      <ellipse cx="60" cy="113" rx="46" ry="5" fill="var(--line)"/>
+      <g class="body-g">
+        <path d="M30 112 C25 82 34 60 60 60 C86 60 95 82 90 112 Z" fill="var(--fur)"/>
+        <path d="M45 112 C43 90 49 77 60 77 C71 77 77 90 75 112 Z" fill="var(--fur-belly)"/>
+        <circle cx="42" cy="27" r="6.5" fill="var(--fur-dark)"/><circle cx="78" cy="27" r="6.5" fill="var(--fur-dark)"/>
+        <circle cx="60" cy="44" r="23" fill="var(--fur)"/>
+        <ellipse cx="60" cy="53" rx="12" ry="9" fill="var(--fur-belly)"/>
+        <g class="eyes-open" fill="var(--m-ink)"><circle cx="50.5" cy="39" r="2.8"/><circle cx="69.5" cy="39" r="2.8"/></g>
+        <g class="eyes-closed" stroke="var(--m-ink)" stroke-width="2" fill="none" stroke-linecap="round"><path d="M47 40 q3.5 3 7 0"/><path d="M66 40 q3.5 3 7 0"/></g>
+        <ellipse cx="60" cy="48" rx="4" ry="2.8" fill="var(--m-ink)"/>
+        <rect class="teeth" x="57.2" y="54" width="5.6" height="5.5" rx="1" fill="var(--tooth)" stroke="var(--fur-dark)" stroke-width=".6"/>
+        <circle class="mouth-o" cx="60" cy="57" r="2.6" fill="var(--m-ink)"/>
+        <ellipse cx="51" cy="80" rx="5" ry="3.5" fill="var(--fur-dark)"/><ellipse cx="69" cy="80" rx="5" ry="3.5" fill="var(--fur-dark)"/>
+      </g>
+      <g class="waves" fill="none" stroke="var(--v4)" stroke-width="3" stroke-linecap="round">
+        <path d="M90 46 q6 8 0 16"/><path d="M99 40 q10 14 0 28" style="animation-delay:.15s"/><path d="M108 34 q14 20 0 40" style="animation-delay:.3s"/>
+      </g>
+      <g class="zz" fill="var(--muted)" font-family="var(--f-display)" font-weight="700"><text x="88" y="30" font-size="14">z</text><text x="98" y="18" font-size="18" style="animation-delay:.6s">z</text></g>
+    </svg>`;
+  }
+  const moodFor = level => level.id === "vert" ? "sleep" : (level.id === "orange" || level.id === "rouge") ? "alert" : "calm";
+
+  // ---------- Sound: two short rising whistles ----------
+  let audio;
+  function primeAudio() {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume?.(); } catch (e) { audio = null; }
+  }
+  function whistle() {
+    if (!state.sound || !audio) return;
+    try {
+      [0, 0.38].forEach(offset => {
+        const t = audio.currentTime + offset;
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(1700, t);
+        o.frequency.exponentialRampToValueAtTime(3100, t + 0.22);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.18, t + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o.connect(g).connect(audio.destination);
+        o.start(t); o.stop(t + 0.32);
+      });
+    } catch (e) { /* sound is optional */ }
+  }
+
+  // ---------- Views ----------
+  function renderHeader() {
+    $("#brand").innerHTML = `${marmot("calm")}<div><div class="brand-name">Cyber-Marmotte</div><div class="brand-tag">La météo des cyberattaques pour les petites structures</div></div>`;
+    const b = $("#sound");
+    b.setAttribute("aria-pressed", String(state.sound));
+    b.textContent = state.sound ? "Son : activé" : "Son : coupé";
+  }
+
+  function renderSteps() {
+    $("#steps").innerHTML = STEPS.map(s => `
+      <li><button type="button" data-step="${s.n}" ${s.n > state.reached ? "disabled" : ""}
+        ${s.n === state.step ? 'aria-current="step"' : ""} class="${s.n < state.reached && s.n !== state.step ? "is-done" : ""}">
+        <span class="num">${s.n}</span><span class="lbl">${s.lbl}</span><small>${s.sub}</small>
+      </button></li>`).join("");
+  }
+
+  function viewSignup() {
+    const p = state.profile;
+    return `<div class="signup">
+      <form class="panel form" id="signup">
+        <div><p class="eyebrow">Étape 1 · Inscription</p><h2>Présentez votre structure</h2>
+        <p class="muted">Cinq minutes, une seule fois. La Cyber-Marmotte s’en sert pour ne surveiller que ce qui vous concerne.</p></div>
+        <div class="fields">
+          <div class="field"><label for="f-name">Nom de la structure</label><input id="f-name" value="${esc(p.name)}"></div>
+          <div class="field"><label for="f-sector">Secteur</label><select id="f-sector">${SECTORS.map(s => `<option ${s === p.sector ? "selected" : ""}>${s}</option>`).join("")}</select></div>
+          <div class="field"><label for="f-staff">Nombre de salariés</label><input id="f-staff" type="number" min="1" value="${p.staff}"></div>
+          <div class="field"><label for="f-phone">Téléphone pour les alertes</label><input id="f-phone" value="${esc(p.phone)}"></div>
+        </div>
+        <fieldset class="fieldset"><legend>Logiciels et équipements utilisés</legend>
+          <div class="softs">${SOFTS.map(s => `<label class="soft" for="s-${s.id}"><input type="checkbox" id="s-${s.id}" data-soft="${s.id}" ${p.softs[s.id] ? "checked" : ""}>${s.label}</label>`).join("")}</div>
+        </fieldset>
+        <div class="row-end"><button class="btn" type="submit">Voir ma météo du jour →</button></div>
+      </form>
+      <aside class="panel persona" aria-label="Utilisatrice de la démonstration">
+        <p class="eyebrow">Pour qui ?</p>
+        <h3>Sophie Martin, 34 ans</h3>
+        <dl>
+          <dt>Poste</dt><dd>Assistante de direction, et référente informatique « en plus »</dd>
+          <dt>Structure</dt><dd>Cabinet d’architectes, Nantes, 18 salariés</dd>
+          <dt>Équipe cyber</dt><dd>Aucune</dd>
+        </dl>
+        <p class="quote">« Je reçois des alertes de partout et je ne sais jamais par quoi commencer. »</p>
+      </aside>
+    </div>`;
+  }
+
+  function viewBulletin(day) {
+    const m = compute(day);
+    const lv = m.level;
+    const isTuesday = day === 1;
+    const calm = isTuesday && state.nightDone && m.overall <= LEVELS[1].max;
+    return `<section class="bulletin" aria-label="Bulletin du ${DAYS[day]}">
+      <div class="panel bul-head lvl-${lv.id}">
+        <div class="bul-title">
+          <p class="eyebrow">${DAYS[day]} · Bulletin de 7 h · ${esc(state.profile.name)}</p>
+          <span class="level-badge lvl-${lv.id}">${lv.name}</span>
+          <p class="summary">${lv.text}</p>
+        </div>
+        ${marmot(moodFor(lv))}
+      </div>
+
+      <div class="cats">${m.cats.map(c => catTile(c)).join("")}</div>
+
+      <div class="lower">
+        <div class="panel lvl-${lv.id}">
+          <h3>Le Top 3 du jour</h3>
+          ${m.pending.length ? `<ul class="acts">${m.pending.slice(0, 3).map((a, i) => `
+            <li><label class="act ${i === 0 ? "top1" : ""}" for="a-${a.id}">
+              <input type="checkbox" id="a-${a.id}" data-act="${a.id}">
+              <span><strong>${a.label}</strong><span class="how">${a.how}</span></span>
+              <span class="gain">${a.time} · −${a.gain} pts</span>
+            </label></li>`).join("")}</ul>` : `<p>Plus rien d’urgent aujourd’hui. Bravo.</p>`}
+          ${m.doneHere.length ? `<div class="done-list"><p class="eyebrow">Fait</p>${m.doneHere.map(id => `<span>${ACTIONS[id].label}</span>`).join("")}</div>` : ""}
+        </div>
+        <div class="panel">
+          <h3>Sources analysées cette nuit</h3>
+          <ul class="sources">
+            <li><span>Bulletins d’alerte du CERT-FR</span><em>simulé</em></li>
+            <li><span>Score EPSS : probabilité d’exploitation d’une faille</span><em>simulé</em></li>
+            <li><span>Catalogue CISA KEV : failles déjà exploitées</span><em>simulé</em></li>
+            <li><span>Forums de hackers surveillés</span><em>simulé</em></li>
+            <li><span>Calendrier des attaques (soldes, impôts, fêtes)</span><em>simulé</em></li>
+          </ul>
+        </div>
+      </div>
+
+      ${!isTuesday ? `<div class="callout"><p>Et si une nouvelle menace apparaissait cette nuit ?</p>
+        <button class="btn" type="button" id="go-night">Simuler la nuit suivante →</button></div>` : ""}
+      ${calm ? `<div class="callout"><p>Retour en ${lv.name.toLowerCase()} : la marmotte peut se rendormir.</p>
+        <button class="btn btn-ghost" type="button" id="restart">Rejouer la démo</button></div>` : ""}
+    </section>`;
+  }
+
+  function catTile(c) {
+    const lvIndex = LEVELS.indexOf(c.level);
+    return `<article class="cat lvl-${c.level.id}">
+      <div class="cat-top"><span class="pastille"></span><span class="cat-level">${c.level.short}</span><span class="cat-score mono">${c.score}/100</span></div>
+      <div><h3>${c.name}</h3><p class="muted">${c.short}</p></div>
+      <div class="gauge" aria-hidden="true">${[1, 2, 3, 4].map(i => `<span class="g${i} ${i - 1 <= lvIndex ? "on" : ""}"></span>`).join("")}<i style="left:${Math.max(1, c.score)}%"></i></div>
+      <ul class="why" aria-label="Pourquoi ce niveau">
+        <li><span class="pts">+${c.base}</span><span class="muted">Niveau de fond pour une PME</span></li>
+        ${c.signals.map(s => `<li><span class="pts ${state.done[s.act] ? "off" : ""}">+${s.pts}</span>
+          <span class="${state.done[s.act] ? "off" : ""}">${s.text}<span class="src">${s.src}</span></span></li>`).join("")}
+      </ul>
+    </article>`;
+  }
+
+  function nightLines() {
+    const p = state.profile;
+    const n = Object.values(p.softs).filter(Boolean).length;
+    const L = [
+      ["02:00", "Lecture des nouveaux bulletins du CERT-FR"],
+      ["02:03", "Mise à jour des scores EPSS de toutes les failles publiées"],
+      ["02:05", "Comparaison avec le catalogue CISA KEV"],
+      ["02:07", `Croisement avec vos ${n} logiciels et équipements`],
+    ];
+    if (p.softs.vpn) {
+      L.push(["02:08", "Faille critique sur votre VPN : exploitation probable 87 % sous 30 jours", true]);
+      L.push(["02:10", `Forum surveillé : accès VPN du secteur « ${p.sector} » mis en vente`, true]);
+    } else {
+      L.push(["02:08", "Aucune nouvelle faille sur vos logiciels"]);
+    }
+    if (p.softs.mail) L.push(["02:11", "Calendrier : Black Friday dans 3 jours, pic de faux mails attendu", true]);
+    L.push(["02:12", "Calcul du bulletin de mardi terminé"]);
+    return L;
+  }
+
+  function viewNight() {
+    return `<div class="night">
+      <div class="term" id="term" aria-live="polite"><div class="line"><span class="t">01:59</span>Démarrage de l’analyse nocturne <span class="cursor"></span></div></div>
+      <div class="panel result" id="result"><p class="eyebrow">Nuit du lundi au mardi</p>
+        <p class="muted">Pendant que le cabinet dort, l’IA lit les sources et recalcule le risque…</p>${marmot("calm")}</div>
+    </div>`;
+  }
+
+  function nightResult() {
+    const m = compute(1);
+    const lv = m.level;
+    const top = m.pending[0];
+    const alert = lv.id === "orange" || lv.id === "rouge";
+    return `<p class="eyebrow">Mardi 24 novembre · 7 h 02</p>
+      <span class="level-badge lvl-${lv.id}">${lv.name}</span>
+      ${marmot(alert ? "alert" : moodFor(lv))}
+      ${alert ? `<div class="sms" role="status">
+        <div class="sms-head"><span>SMS · Cyber-Marmotte</span><span>07:02</span></div>
+        <strong>${lv.name} pour ${esc(state.profile.name)}</strong>
+        <p>${top ? `Action n°1 avant ce soir : ${top.label.charAt(0).toLowerCase() + top.label.slice(1)}.` : ""} Détails dans l’appli.</p>
+        <span class="sms-head"><span>Envoyé au ${esc(state.profile.phone)} · aussi sur Teams</span></span>
+      </div>` : `<p>Rien de nouveau cette nuit : pas d’alerte envoyée.</p>`}
+      <button class="btn" type="button" id="go-day2">Ouvrir la météo de mardi →</button>`;
+  }
+
+  let timers = [];
+  function runNight() {
+    timers.forEach(clearTimeout); timers = [];
+    const term = $("#term"), res = $("#result");
+    const lines = nightLines();
+    const finish = () => {
+      term.querySelector(".cursor")?.remove();
+      res.innerHTML = nightResult();
+      state.nightDone = true; state.reached = Math.max(state.reached, 4);
+      renderSteps();
+      const lv = compute(1).level;
+      if (lv.id === "orange" || lv.id === "rouge") whistle();
+    };
+    if (state.nightDone || reduced) {
+      term.innerHTML = lines.map(([t, x, hit]) => `<div class="line"><span class="t">${t}</span><span class="${hit ? "hit" : ""}">${x}</span></div>`).join("");
+      finish(); return;
+    }
+    lines.forEach(([t, x, hit], i) => {
+      timers.push(setTimeout(() => {
+        term.querySelector(".cursor")?.remove();
+        term.insertAdjacentHTML("beforeend", `<div class="line"><span class="t">${t}</span><span class="${hit ? "hit" : ""}">${x}</span>${i < lines.length - 1 ? ' <span class="cursor"></span>' : ""}</div>`);
+      }, 650 * (i + 1)));
+    });
+    timers.push(setTimeout(finish, 650 * (lines.length + 1)));
+  }
+
+  function render() {
+    renderHeader(); renderSteps();
+    const v = $("#view");
+    if (state.step === 1) v.innerHTML = viewSignup();
+    else if (state.step === 2) v.innerHTML = viewBulletin(0);
+    else if (state.step === 3) { v.innerHTML = viewNight(); runNight(); }
+    else v.innerHTML = viewBulletin(1);
+  }
+  function go(step) { timers.forEach(clearTimeout); state.step = step; state.reached = Math.max(state.reached, step); render(); window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" }); }
+
+  // ---------- Events ----------
+  document.addEventListener("submit", e => {
+    if (e.target.id !== "signup") return;
+    e.preventDefault();
+    const p = state.profile;
+    p.name = $("#f-name").value.trim() || "Ma structure";
+    p.sector = $("#f-sector").value;
+    p.staff = Number($("#f-staff").value) || 1;
+    p.phone = $("#f-phone").value.trim() || "—";
+    document.querySelectorAll("[data-soft]").forEach(c => { p.softs[c.dataset.soft] = c.checked; });
+    state.nightDone = false; state.done = {};
+    state.reached = 2;
+    go(2);
+  });
+  document.addEventListener("change", e => {
+    const id = e.target.dataset?.act;
+    if (!id) return;
+    const before = compute(state.step === 4 ? 1 : 0).level.id;
+    state.done[id] = e.target.checked;
+    render();
+    const after = compute(state.step === 4 ? 1 : 0).level.id;
+    if (before !== after) $("#view .bul-head")?.animate?.([{ transform: "scale(.98)" }, { transform: "none" }], { duration: reduced ? 0 : 260 });
+  });
+  document.addEventListener("click", e => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.step) { go(Number(t.dataset.step)); return; }
+    if (t.id === "go-night") { primeAudio(); state.nightDone = false; go(3); }
+    else if (t.id === "go-day2") go(4);
+    else if (t.id === "restart" || t.id === "reset") { timers.forEach(clearTimeout); state = fresh(); render(); window.scrollTo({ top: 0 }); }
+    else if (t.id === "sound") { state.sound = !state.sound; if (state.sound) primeAudio(); renderHeader(); }
+  });
+
+  render();
+})();
+</script>
+
+</body></html>
